@@ -27,9 +27,9 @@ function pose = uav(command)
 
 %% Parameters
 
-global dt initial_state;
+global dt initial_state; % MAIN.m에 있음
 
-%% Initialize gains
+%% Initialize gains(PID)
 
 Kp_roll = 30;
 Kd_roll = 5;
@@ -42,22 +42,24 @@ Kd_yaw = 5;
 
 %% Initialize constants
 
-Ixx = 8.1*10^(-3);  % Quadrotor moment of inertia around X axis
-Iyy = 8.1*10^(-3);  % Quadrotor moment of inertia around Y axis
-Izz = 14.2*10^(-3);  % Quadrotor moment of inertia around Z axis
-m = 1.1;  % Mass of the Quadrotor in Kg
-g = 9.81;   % Gravitational acceleration
+Ixx = 8.1*10^(-3);  % Quadrotor moment of inertia around X axis  (X축의 관성 모멘트)
+Iyy = 8.1*10^(-3);  % Quadrotor moment of inertia around Y axis  (Y축의 관성 모멘트)
+Izz = 14.2*10^(-3);  % Quadrotor moment of inertia around Z axis (Z축의 관성 모멘트)
+m = 1.1;  % Mass of the Quadrotor in Kg(드론 무게, 단위 : kg)
+g = 9.81;   % Gravitational acceleration (중력 가속도)
 
 %% Initialize state
 
 persistent state;
 
+% 초기 상태일 시
 if isempty(state)
     state = initial_state;
 end
 
 %% Position controller
 
+% command: control command ([roll* pitch* yaw* thrust*]) to UAV
 roll_ref = command(1);
 pitch_ref = -command(2);
 yaw_ref = command(3);
@@ -90,28 +92,35 @@ e_dyaw = -state(12);
 
 %% Attitude controller
 
-tau_roll = Kp_roll*e_roll + Kd_roll*e_droll; % Roll rate
+tau_roll = Kp_roll*e_roll + Kd_roll*e_droll;      % Roll rate
 tau_pitch = Kp_pitch*e_pitch + Kd_pitch*e_dpitch; % Pitch rate
-tau_yaw = Kp_yaw*e_yaw + Kd_yaw*e_dyaw; % Yaw rate
+tau_yaw = Kp_yaw*e_yaw + Kd_yaw*e_dyaw;           % Yaw rate
 
-input = [thrust tau_roll tau_pitch tau_yaw];
+input = [thrust tau_roll tau_pitch tau_yaw];      % 추력 roll pitch yaw
 
-%% System dynamics
+%% System dynamics(thesis pdf p.51 책 p.20)
 
+% x y z 속도
 dstate(1) = state(7);                                                                                   % x_dot
 dstate(2) = state(8);                                                                                   % y_dot
 dstate(3) = state(9);                                                                                   % z_dot
+
+% roll pitch yaw 각속도
 dstate(4) = state(10) + sin(state(4))*tan(state(5))*state(11) + cos(state(4))*tan(state(5))*state(12);  % roll_dot
 dstate(5) = cos(state(4))*state(11) - sin(state(4))*state(12);                                          % pitch_dot
 dstate(6) = sin(state(4))/cos(state(5))*state(11) + cos(state(4))/cos(state(5))*state(12);              % yaw_dot
+
+% x y z 가속도
 dstate(7) = (cos(state(4))*cos(state(6))*sin(state(5)) + sin(state(4))*sin(state(6)))*(input(1)/m);     % v_dot
 dstate(8) = (-cos(state(4))*sin(state(5))*sin(state(6)) + cos(state(6))*sin(state(4)))*(input(1)/m);    % u_dot
 dstate(9) = (cos(state(5))*cos(state(4)))*(input(1)/m) - g;                                             % w_dot
+
+% 각가속도
 dstate(10) = ((Iyy - Izz)/Ixx)*state(11)*state(12) + (input(2)/Ixx);                                    % p_dot
 dstate(11) = ((Izz - Ixx)/Iyy)*state(10)*state(12) + (input(3)/Iyy);                                    % q_dot
 dstate(12) = ((Ixx - Iyy)/Izz)*state(10)*state(11) + (input(4)/Izz);                                    % r_dot
 
-state = state + dt*dstate;
+state = state + dt*dstate; 
 
 %% Noisy localisation
 
