@@ -34,8 +34,8 @@ simulation_duration = 60; % [s]
 dt = 0.001;
 kend = simulation_duration/dt;
 
-initial_state = [0 0 0.1 0 0 pi 0 0 0 0 0 0];%[0 0 0.1 0 0 pi 0 0 0 0 0 0];
-               %[x y z roll pitch yaw ? ? ? p q r]
+initial_state = [0 0 0.1 0 0 pi 0 0 0 0 0 0];
+               %[x y z roll pitch yaw vx vy vz p q r]
 %% Prealocate variables
 
 pose = zeros(kend, 6);
