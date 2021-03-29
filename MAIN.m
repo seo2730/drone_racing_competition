@@ -50,7 +50,7 @@ gates(:,4) = gates(:,4)/180*pi; % converts from degrees to radiants
 
 %% Trajectory genaration
 
-[pose_d, velocity_d] = trajectory(gates);
+[pose_d, velocity_d, accel_d] = trajectory(gates);
 
 %% Main loop
 control_uav = controller();
@@ -61,7 +61,7 @@ for k = 1:kend
     tic;
     
 %     command = controller(pose(k,:), pose_d(k,:), velocity_d(k,:));
-    command = control_uav.control_run(pose(k,:), pose_d(k,:), velocity_d(k,:));
+    command = control_uav.control_run(pose(k,:), pose_d(k,:), velocity_d(k,:), accel_d(k,:));
 
     elapsed = elapsed + toc; % for computational time
     

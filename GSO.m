@@ -48,15 +48,15 @@ figure(1); % Plot of trajectories of glowworms from their
 % initial locations to final locations
 plot(A_init(:,1),A_init(:,2),'x');
 xlabel('X'); ylabel('Y');
-% hold on;
-% DefineAxis;
-% for k = 1 : n
-%     plot(agent_x(k,:,:),agent_y(k,:,:));
-% end
-% DefineAxis;
-% grid on;
-% hold on;
-% plot([-0.0093;1.2857;-0.46], [1.5814;-0.0048;-0.6292],'ok');
+hold on;
+DefineAxis;
+for k = 1 : n
+    plot(agent_x(k,:,:),agent_y(k,:,:));
+end
+DefineAxis;
+grid on;
+hold on;
+plot([-0.0093;1.2857;-0.46], [1.5814;-0.0048;-0.6292],'ok');
 
 figure(2); % Plot of final locations of glowworms
 plot(A(:,1),A(:,2),'.');
@@ -70,7 +70,7 @@ plot([-0.0093;1.2857;-0.46], [1.5814;-0.0048;-0.6292],'ok');
 function DeployAgents
     global n m A_init A bound
     B = -bound*ones(n,m);
-    A_init = B + 2*bound*rand(n,m);
+    A_init = 5*eye(n,m) + 1*bound*rand(n,m);
     A = A_init;
 end
 % Function 2: UpdateLuciferin.m-------------------------------------------------

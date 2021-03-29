@@ -27,11 +27,11 @@
 % Environment: MATLAB R2020b
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function [pose_d, velocity_d] = trajectory(gates)
+function [pose_d, velocity_d, accel_d] = trajectory(gates)
 
 global initial_state dt;
 
-desired_speed = 1; % desired speed over the trajectory [in m/s]
+desired_speed = 1.5; % desired speed over the trajectory [in m/s]
 
 %% Calculate waypoints
 
@@ -80,5 +80,5 @@ pose_d(:,1:3) = interp1(time, waypoints(:,1:3), timeInterpolated, 'spline'); % m
 pose_d(:,4) = interp1(time, waypoints(:,4), timeInterpolated, 'linear');
 
 %% Calculate desred velocity
-
 velocity_d = diff(pose_d)/dt;
+accel_d = diff(velocity_d)/dt;
