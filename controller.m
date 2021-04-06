@@ -10,9 +10,9 @@ classdef controller < handle
         g = 9.81;           % Gravitational acceleration (중력 가속도)
         
         % Sliding control
-        cx = 1; J0 = 1; J1 = 1; pix1 = 1; pix2 = 1; % design parameter in x
-        cy = 1; J2 = 1; J3 = 1; piy1 = 1; piy2 = 1; % design parameter in y
-        cz = 1; J4 = 1; J5 = 1; piz1 = 1; piz2 = 1; % design parameter in z
+        cx = 0.1; J0 = 0.1; J1 = 0.1; pix1 = 0.1; pix2 = 0.1; % design parameter in x
+        cy = 0.1; J2 = 0.1; J3 = 0.1; piy1 = 0.1; piy2 = 0.1; % design parameter in y
+        cz = 0.1; J4 = 0.1; J5 = 0.1; piz1 = 0.1; piz2 = 0.1; % design parameter in z
         
     end
     
@@ -74,7 +74,7 @@ classdef controller < handle
             sx = model.cx*e1x + e2x;
             
             Ux = model.m*(dxdx_ref + model.cx*(model.J1 + model.J0*e1x*dt - e2x) ...
-                 - (model.J1*dot_e1x + model.J0*e1x + model.pix1*sign(sx) + model.pix2*sx));
+                 - (model.J1*dot_e1x + model.J0*e1x) - model.pix1*sign(sx) + model.pix2*sx);
 
             % Y
             e1y = y - y_ref;
@@ -84,7 +84,7 @@ classdef controller < handle
             sy = model.cy*e1y + e2y;
             
             Uy = model.m*(dydy_ref + model.cy*(model.J3 + model.J2*e1y*dt - e2y) ...
-                 - (model.J3*dot_e1y + model.J2*e1y + model.piy1*sign(sy) + model.piy2*sy));
+                 - (model.J3*dot_e1y + model.J2*e1y) - model.piy1*sign(sy) + model.piy2*sy);
 
             % Z
             e1z = z - z_ref;
@@ -94,11 +94,13 @@ classdef controller < handle
             sz = model.cz*e1z + e2z;
             
             Uz = model.m*(dzdz_ref + model.cz*(model.J5 + model.J4*e1z*dt - e2z) ...
-                 - (model.J5*dot_e1z + model.J4*e1z + model.piz1*sign(sz) + model.piz2*sz));
-
-             d_thrust = 14;
+                 - (model.J5*dot_e1z + model.J4*e1z) - model.piz1*sign(sz) + model.piz2*sz);
             
-            d_att = [Ux Uy Uz d_thrust];
+            theta = atan((Ux*cos(yaw) + Uy*sin(yaw))/Uz);
+            phi = atan(cos(theta)*(Ux*sin(yaw) - Uy*cos(yaw))/Uz);
+            d_thrust = Uz/(cos(theta)*cos(phi));
+            
+            d_att = [theta phi yaw d_thrust];
         end
         
         function commands = attitude_controller(model,d_att)

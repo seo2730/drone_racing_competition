@@ -61,7 +61,8 @@ for k = 1:kend
     tic;
     
 %     command = controller(pose(k,:), pose_d(k,:), velocity_d(k,:));
-    command = control_uav.control_run(pose(k,:), pose_d(k,:), velocity_d(k,:), accel_d(k,:));
+%     command = control_uav.control_run(pose(k,:), pose_d(k,:), velocity_d(k,:), accel_d(k,:));
+    command = control_uav.control_run([0 0 0 0 0 0], [0 0 0 0 0 0], [0 0 0 0 0 0], [0 0 0 0 0 0]);
 
     elapsed = elapsed + toc; % for computational time
     
