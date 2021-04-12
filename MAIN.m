@@ -27,7 +27,7 @@ global dt initial_state;
 
 %% Changeable parameters
 
-simulation_duration = 60; % [s]
+simulation_duration = 0.5; % [s]
 
 %% Static parameters
 
@@ -53,15 +53,16 @@ gates(:,4) = gates(:,4)/180*pi; % converts from degrees to radiants
 [pose_d, velocity_d, accel_d] = trajectory(gates);
 
 %% Main loop
-control_uav = attitude_controller();
+%control_uav = attitude_controller(initial_state, initial_state);
 elapsed = 0;
 for k = 1:kend
     
     %% UAV controller
     tic;
     
-%     command = controller(pose(k,:), pose_d(k,:), velocity_d(k,:));
-    command = control_uav.controller_run(pose(k,:), pose_d(k,:), velocity_d(k,:), accel_d(k,:));
+    %command = controller(pose(k,:), pose_d(k,:), velocity_d(k,:));
+    %command = control_uav.controller_run(pose(k,:), pose_d(k,:), velocity_d(k,:), accel_d(k,:));
+    command = controller(pose(k,:), pose_d(k,:), velocity_d(k,:), accel_d(k,:));
     elapsed = elapsed + toc; % for computational time
     
     %% UAV model
