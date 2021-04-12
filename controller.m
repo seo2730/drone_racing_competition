@@ -1,12 +1,14 @@
-
 function input = controller(pose, pose_d, velocity_d, accel_d)
     %CONTROLLER 이 함수의 요약 설명 위치
     %   자세한 설명 위치
 
-    persistent old_pose;
+    persistent old_pose roll_dot pitch_dot yaw_dot p q r input_roll input_pitch input_yaw;
     persistent old_v_de; % old velocity desired
     if isempty(old_pose)
-         old_pose = pose;
+         old_pose = [0 0 0 0 0 0];
+         roll_dot=0; pitch_dot=0; yaw_dot=0;
+         p=0; q=0; r=0;
+         input_roll=0; input_pitch=0; input_yaw=0;
     end
    %%%%%%% Parameter %%%%%%%%   
    % Quadrotor specs
@@ -23,68 +25,103 @@ function input = controller(pose, pose_d, velocity_d, accel_d)
     gamma = 0.1; % 상현 수정
     tilde = 5; % 상현 수정
     simga = 0.3; % 상현 수정
-    dt = 0.01;
-
-    % Sliding control
-    %cx = 1; J0 = 0.1; J1 = 0.1; pix1 = 1; pix2 = 1; % design parameter in x
-    %cy = 1; J2 = 0.1; J3 = 0.1; piy1 = 1; piy2 = 1; % design parameter in y
-    %cz = 1; J4 = 0.1; J5 = 0.1; piz1 = 1; piz2 = 1; % design parameter in z
+    dt = 0.001;
     
-    %%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%% 
     
     % 위치 제어 : input : 현재 위치, desired 위치, 속도, 가속도
-    [d_att, d_thrust, old_v_de, old_pose] = position_controller(pose, pose_d, velocity_d, accel_d, old_pose, old_v_de);
-
+    [d_att, d_thrust, old_v_de, old_pose] = position_controller(pose, pose_d, velocity_d, accel_d, old_pose, old_v_de,input_roll,input_pitch,input_yaw);
+    
     % attitude controller에서 현재 각속도가 필요함 
-    pitch_dot = (pose(:,4) - old_pose(:,4))/dt;
-    roll_dot = (pose(:,5) - old_pose(:,5))/dt;
-    yaw_dot = (pose(:,6) - old_pose(:,6))/dt;
-    old_pose = pose;
-    att_dot = [pitch_dot roll_dot yaw_dot];
-    % 자세 제어 : 현재 자세, 각속도. desired 자세, 각속도, mode(에러가 발생함)
+%     roll_dot = (pose(:,4) - old_pose(:,4))/dt;
+%     pitch_dot = (pose(:,5) - old_pose(:,5))/dt;
+%     yaw_dot = (pose(:,6) - old_pose(:,6))/dt;
+    p_dot = ((Iyy - Izz)/Ixx)*q*r + (input_roll/Ixx);
+    q_dot = ((Izz - Ixx)/Iyy)*p*r + (input_pitch/Iyy);
+    r_dot = ((Ixx - Iyy)/Izz)*p*q + (input_yaw/Izz);
+    
+    p = p + dt*p_dot;
+    q = q + dt*q_dot;
+    r = r + dt*r_dot;
+    
+    roll_dot = p + sin(pose(:,4))*tan(pose(:,5))*q + cos(pose(:,4))*tan(pose(:,5))*r;
+    pitch_dot = cos(pose(:,4))*q - sin(pose(:,4))*r;  
+    yaw_dot = sin(pose(:,4))/cos(pose(:,5))*q + cos(pose(:,4))/cos(pose(:,5))*r;
+%     roll_dot = roll_dot + dt*p_dot;
+%     pitch_dot = pitch_dot + dt*q_dot;  
+%     yaw_dot = yaw_dot + dt*r_dot;
+%     old_pose = pose;
+    att_dot = [roll_dot pitch_dot yaw_dot];
+    
+    % 자세 제어 : 현재 자세, 각속도. desired 자세, 각속도, mode
     % Constraint 필요
     input_roll = max([min([attitude_control_run(pose(:,4:6),att_dot,d_att(1:3),d_att(4:6),1) 3.1416/2]) -3.1416/2]);
     input_pitch = max([min([attitude_control_run(pose(:,4:6),att_dot,d_att(1:3),d_att(4:6),2) 3.1416/2]) -3.1416/2]);
     input_yaw = attitude_control_run(pose(:,4:6),att_dot,d_att(1:3),d_att(4:6),3);
 
-    d_thrust = max([min([d_thrust,  m*g*10]), m*g]);
+%     d_thrust = max([min([d_thrust  g*10]) 0]);
     input = [input_roll, input_pitch, input_yaw, d_thrust] ; 
 end
 
-function [d_att, d_thrust, old_v_de, old_pose] = position_controller(pose, pose_d, velocity_d, accel_d, old_pose, old_v_de)
+function [d_att, d_thrust, old_v_de, old_pose] = position_controller(pose, pose_d, velocity_d, accel_d, old_pose, old_v_de, input_roll, input_pitch, input_yaw)
     %global dt initial_state; % 생성자로 global 안쓰기 %%%%%%%%%%% 수정하기
     %persistent old_pose; % stores previous pose % 생성자로 persistent 안쓰기 %%%%%%%%%%% 수정하기
-    persistent dt J c m
-    persistent e1x_int e1y_int e1z_int
+    persistent dt J c m g thrust_past vx vy vz 
+    persistent roll_dot pitch_dot yaw_dot p q r
+    persistent e1x_int e1y_int e1z_int 
     persistent Kax Kay Kaz pix piy piz 
     if isempty(dt)
         m = 1.1; 
-        dt = 0.01;
-        J = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1];
-        c = [1, 1, 1];
+        dt = 0.001;
+        J = [0.1, 0.1, 0.1, 0.1, 1, 1];
+        c = [0.1, 0.1 1];
         e1x_int = 0; e1y_int = 0; e1z_int = 0;
-        Kax = 0.012; Kay = 0.012; Kaz = 0.012;
-        pix = [1,1]; piy = [1,1]; piz = [1, 1];
+        Kax = 0.1; Kay = 0.1; Kaz = 1;
+        pix = [0.1,0.1]; piy = [0.1,0.1]; piz = [1,1];
+        g=9.81;
+        thrust_past=m*g;
+        vx = 0; vy = 0; vz = 0;
+        roll_dot=0; pitch_dot=0; yaw_dot=0;
+        p=0; q=0; r=0;
     end
     
+    Ixx = 8.1*10^(-3);  % Quadrotor moment of inertia around X axis  (X축의 관성 모멘트)
+    Iyy = 8.1*10^(-3);  % Quadrotor moment of inertia around Y axis  (Y축의 관성 모멘트)
+    Izz = 14.2*10^(-3); % Quadrotor moment of inertia around Z axis (Z축의 관성 모멘트)
 
     x = pose(1);
     y = pose(2);
     z = pose(3);
     yaw = pose(6);
+%     yaw = pose_d(4);
+%     x = pose_d(1);
+%     y = pose_d(2);
+%     z = pose_d(3);
+%     yaw = pose_d(4);
 
-    vx = (pose(1) - old_pose(1))/dt;
-    vy = (pose(2) - old_pose(2))/dt;
-    vz = (pose(3) - old_pose(3))/dt;
+%     vx = (pose(1) - old_pose(1))/dt;
+%     vy = (pose(2) - old_pose(2))/dt;
+%     vz = (pose(3) - old_pose(3))/dt;
 
-    ax = (pose(4) - old_pose(7))/dt;
-    ay = (pose(5) - old_pose(8))/dt;
-    az = (pose(6) - old_pose(9))/dt;
+    ax = (cos(pose(4))*cos(pose(6))*sin(pose(5)) + sin(pose(4))*sin(pose(6)))*(thrust_past/m);
+    ay = (-cos(pose(4))*sin(pose(5))*sin(pose(6)) + cos(pose(6))*sin(pose(4)))*(thrust_past/m);
+    az = (cos(pose(5))*cos(pose(4)))*(thrust_past/m) - g;
+
+    vx = vx + ax*dt;
+    vy = vy + ay*dt;
+    vz = vz + az*dt;
 
     x_ref = pose_d(1);
     y_ref = pose_d(2);
     z_ref = pose_d(3);
     yaw_ref = pose_d(4);
+    if(abs(yaw_ref - yaw) > pi)
+        if(yaw_ref < yaw)
+            yaw = yaw - 2*pi;
+        else
+            yaw = yaw + 2*pi;
+        end
+    end
 
     dx_ref = velocity_d(1);
     dy_ref = velocity_d(2);
@@ -103,7 +140,8 @@ function [d_att, d_thrust, old_v_de, old_pose] = position_controller(pose, pose_
     e1x = x - x_ref;
     dot_e1x = vx - dx_ref;
     e1x_int = e1x_int + e1x;
-    beta1 = dx_ref-old_v_de(1)-J(1)*e1x_int*dt-J(2)*e1x;
+%     beta1 = dx_ref-old_v_de(1)-J(1)*e1x_int*dt-J(2)*e1x;
+    beta1 = dx_ref-J(1)*e1x_int*dt-J(2)*e1x;
     e2x = vx - beta1; % B를 넣어야할지? Desired velocity로 넣어야할지? 
 
     sx = c(1)*e1x + e2x;
@@ -115,7 +153,8 @@ function [d_att, d_thrust, old_v_de, old_pose] = position_controller(pose, pose_
     e1y = y - y_ref;
     dot_e1y = vy - dy_ref;
     e1y_int = e1y_int + e1y;
-    beta2 = dy_ref-old_v_de(2)-J(3)*e1y_int*dt-J(4)*e1y;
+%     beta2 = dy_ref-old_v_de(2)-J(3)*e1y_int*dt-J(4)*e1y;
+    beta2 = dy_ref-J(3)*e1y_int*dt-J(4)*e1y;
     e2y = vy - beta2; % B를 넣어야할지? Desired velocity로 넣어야할지? 
 
     sy = c(2)*e1y + e2y;
@@ -127,26 +166,45 @@ function [d_att, d_thrust, old_v_de, old_pose] = position_controller(pose, pose_
     e1z = z - z_ref;
     dot_e1z = vz - dz_ref;
     e1z_int = e1z_int + e1z;
-    beta3 = dz_ref-old_v_de(3)-J(5)*e1z_int*dt-J(6)*e1z;
+%     beta3 = dz_ref-old_v_de(3)-J(5)*e1z_int*dt-J(6)*e1z;
+    beta3 = dz_ref-J(5)*e1z_int*dt-J(6)*e1z;
     e2z = vz - beta3; % B를 넣어야할지? Desired velocity로 넣어야할지? 
 
     sz = c(3)*e1z + e2z;
 
     Uz = Kaz*dzdz_ref+m*(dzdz_ref + c(3)*(J(6)*e1z + J(5)*e1z*dt - e2z) ...
-         - (J(6)*dot_e1z + J(5)*e1z) - piz(1)*sign(sz) + piz(2)*sz);
+         - (J(6)*dot_e1z + J(5)*e1z) - piz(1)*sign(sz) + piz(2)*sz) + m*g;
 
-    roll = atan((Ux*cos(yaw) + Uy*sin(yaw))/Uz);
-    pitch = atan(cos(roll)*(Ux*sin(yaw) - Uy*cos(yaw))/Uz);
-    d_thrust = Uz/(cos(roll)*cos(pitch));
+    pitch = atan((Ux*cos(yaw) + Uy*sin(yaw))/Uz);
+    roll = atan(cos(pitch)*(Ux*sin(yaw) - Uy*cos(yaw))/Uz);
+    d_thrust = 0.55*9.81 + Uz/(cos(roll)*cos(pitch));
+%     pitch = atan((Ux*cos(yaw_ref) + Uy*sin(yaw_ref))/Uz);
+%     roll = atan(cos(pitch)*(Ux*sin(yaw_ref) - Uy*cos(yaw_ref))/Uz);
+%     d_thrust = Uz/(cos(roll)*cos(pitch));
+    thrust_past = d_thrust;
 
-    pitch_dot = (pitch - old_pose(4))/dt;
-    roll_dot = (roll - old_pose(5))/dt;
-    yaw_dot = (yaw - old_pose(6))/dt;
-
+%     roll_dot = (roll - old_pose(4))/dt;
+%     pitch_dot = (pitch - old_pose(5))/dt;
+%     yaw_dot = (yaw - old_pose(6))/dt;
+    p_dot = ((Iyy - Izz)/Ixx)*q*r + (input_roll/Ixx);
+    q_dot = ((Izz - Ixx)/Iyy)*p*r + (input_pitch/Iyy);
+    r_dot = ((Ixx - Iyy)/Izz)*p*q + (input_yaw/Izz);
+    
+    p = p + dt*p_dot;
+    q = q + dt*q_dot;
+    r = r + dt*r_dot;
+    
+    roll_dot = p + sin(pose(:,4))*tan(pose(:,5))*q + cos(pose(:,4))*tan(pose(:,5))*r;
+    pitch_dot = cos(pose(:,4))*q_dot - sin(pose(:,4))*r;  
+    yaw_dot = sin(pose(:,4))/cos(pose(:,5))*q + cos(pose(:,4))/cos(pose(:,5))*r;
+%     roll_dot = roll_dot + dt*p_dot;
+%     pitch_dot = pitch_dot + dt*q_dot;  
+%     yaw_dot = yaw_dot + dt*r_dot;
+    
     old_pose = pose;
     old_v_de = [dx_ref, dy_ref, dz_ref];
 
-    d_att = [pitch roll yaw pitch_dot roll_dot yaw_dot];
+    d_att = [roll pitch  yaw roll_dot pitch_dot yaw_dot];
 
 end
 

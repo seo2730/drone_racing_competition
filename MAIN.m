@@ -27,7 +27,7 @@ global dt initial_state;
 
 %% Changeable parameters
 
-simulation_duration = 0.5; % [s]
+simulation_duration = 60; % [s]
 
 %% Static parameters
 
@@ -38,8 +38,8 @@ initial_state = [0 0 0.1 0 0 pi 0 0 0 0 0 0];
                %[x y z roll pitch yaw vx vy vz p q r]
 %% Prealocate variables
 
-pose = zeros(kend, 12);
-pose(1,:) = initial_state(1:12);
+pose = zeros(kend, 6);
+pose(1,:) = initial_state(1:6);
 
 t = dt*(1:kend)';
 
@@ -53,21 +53,20 @@ gates(:,4) = gates(:,4)/180*pi; % converts from degrees to radiants
 [pose_d, velocity_d, accel_d] = trajectory(gates);
 
 %% Main loop
-%control_uav = attitude_controller(initial_state, initial_state);
 elapsed = 0;
 for k = 1:kend
     
     %% UAV controller
     tic;
     
-    %command = controller(pose(k,:), pose_d(k,:), velocity_d(k,:));
-    %command = control_uav.controller_run(pose(k,:), pose_d(k,:), velocity_d(k,:), accel_d(k,:));
     command = controller(pose(k,:), pose_d(k,:), velocity_d(k,:), accel_d(k,:));
     elapsed = elapsed + toc; % for computational time
     
     %% UAV model
-    
+%     command(3) = pose_d(k,4);
     pose(k + 1,:) = uav(command);
+    yaw(k,:) = command(3);
+    thrust(k,:) = command(4);
     
 end
 
@@ -80,3 +79,7 @@ score = environment(gates, pose, pose_d);
 disp('**********');
 disp(['Controller runs at ', num2str(kend/elapsed), 'Hz']);
 disp(['Score is ', num2str(score)]);
+
+%%
+figure(2)
+plot(t,thrust(:,:))
