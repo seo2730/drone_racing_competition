@@ -8,7 +8,7 @@ simulation_duration = 60; % [s]
 dt = 0.001;
 kend = simulation_duration/dt;
 
-initial_state = [1 1 1 0 0 pi 0 0 0 0 0 0];
+initial_state = [10 10 10 0 0 pi 0 0 0 0 0 0];
                %[x y z roll pitch yaw vx vy vz p q r]
 
 pose = zeros(kend, 6);
@@ -22,7 +22,7 @@ control_uav = controller();
 
 for k = 1:kend
     command = control_uav.control_run(pose(k,:), [0 0 0 0], [0.1 0.1 0.1 0.1], [0.1 0.1 0.1 0.1]);
-    pose(k,:) = uav(command);
+    pose(k,1:3) = command;
 end
 
 figure(1)

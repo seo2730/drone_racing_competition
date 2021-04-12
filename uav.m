@@ -141,7 +141,7 @@ function pose = uav(command)
 
     %% Noisy localisation
 
-    pose = state(1:6); % x, y, z, roll, pitch, yaw
+    pose = state(1:12); % x, y, z, roll, pitch, yaw
 
     speed = sqrt(sum(state(7:9).^2));              % noise 요소 
     rate = sqrt(sum(state(10:12).^2));             % noise 요소
