@@ -34,12 +34,12 @@ simulation_duration = 60; % [s]
 dt = 0.001;
 kend = simulation_duration/dt;
 
-initial_state = [0 0 0.1 0 0 pi 0 0 0 0 0 0];
-               %[x y z roll pitch yaw vx vy vz p q r]
+initial_state = [0 0 0.1 0 0 pi 0 0 0 0 0 0];%[0 0 0.1 0 0 pi 0 0 0 0 0 0];
+
 %% Prealocate variables
 
-pose = zeros(kend, 12);
-pose(1,:) = initial_state(1:12);
+pose = zeros(kend, 6);
+pose(1,:) = initial_state(1:6);
 
 t = dt*(1:kend)';
 
@@ -50,46 +50,60 @@ gates(:,4) = gates(:,4)/180*pi; % converts from degrees to radiants
 
 %% Trajectory genaration
 
-[pose_d, velocity_d, accel_d] = trajectory(gates);
-% vel_size = size(velocity_d);
-% pose_size = size(pose_d);
-% pose_d = zeros(pose_size);
-% velocity_d = zeros(vel_size);
-%% data_saved
+[pose_d, velocity_d] = trajectory(gates);
 saved_command = zeros(4, kend);
-saved_weight = zeros(75, kend);
 %% Main loop
-%control_uav = attitude_controller(initial_state, initial_state);
+
 elapsed = 0;
 for k = 1:kend
     
     %% UAV controller
     tic;
     
-    %command = controller(pose(k,:), pose_d(k,:), velocity_d(k,:));
-    %command = control_uav.controller_run(pose(k,:), pose_d(k,:), velocity_d(k,:), accel_d(k,:));
-
-    [command,weight,d_thrust,d_att] = controller(pose(k,:), pose_d(k,:), velocity_d(k,:), accel_d(k,:));
-    elapsed = elapsed + toc; % for computational time
+    [command,error] = controller(pose(k,:), pose_d(k,:), velocity_d(k,:));
     saved_command(:,k) = command;
-    saved_weight(:,k) = weight';
-    saved_thrust(:,k) = d_thrust;
-    saved_att(:,k) = d_att;
+    saved_error(:,k) = error;
+    elapsed = elapsed + toc; % for computational time
+    
     %% UAV model
     
-    pose(k + 1,:) = uav(command);
-    
+    [pose(k + 1,:),error_att(k,:)] = uav(command);
+    error_pos(k,:) = pose_d(k,1:3) - pose(k,1:3);
+%     error_att(k,:) = saved_command(1:3,k)'- pose(k,4:6)  ;
 end
 
 %% Show animation
-figure(1)
-plot3(pose_d(:,1), pose_d(:,2),pose_d(:,3),'ro'); hold on;
-plot3(pose(:,1), pose(:,2),pose(:,3),'bx');
-legend('pose_d','pose')
-% score = environment(gates, pose, pose_d);
 
+score = environment(gates, pose, pose_d);
+% figure(1)
+% plot(t,error_pos(:,1),'r')
+% hold on
+% plot(t,error_pos(:,2),'b')
+% plot(t,error_pos(:,3),'k')
+% hold off
+% legend('x error','y error','z error')
+% 
+% figure(2)
+% tiledlayout(3,1)
+% nexttile
+% plot(t,error_att(:,1),'r')
+% legend('Roll error')
+% nexttile
+% plot(t,error_att(:,2),'b')
+% legend('Pitch error')
+% nexttile
+% plot(t,error_att(:,3),'k')
+% legend('Yaw error')
+% 
+% figure(3)
+% plot(t,saved_error(1,:),'r')
+% hold on
+% plot(t,saved_error(2,:),'b')
+% plot(t,saved_error(3,:),'k')
+% hold off
+% legend('yaw * x error',' yaw * y error','yaw * z error')
 %% Show results
 
-disp('**********');
-disp(['Controller runs at ', num2str(kend/elapsed), 'Hz']);
-disp(['Score is ', num2str(score)]);
+% disp('**********');
+% disp(['Controller runs at ', num2str(kend/elapsed), 'Hz']);
+% disp(['Score is ', num2str(score)]);
