@@ -75,33 +75,35 @@ end
 %% Show animation
 
 score = environment(gates, pose, pose_d);
-% figure(1)
-% plot(t,error_pos(:,1),'r')
-% hold on
-% plot(t,error_pos(:,2),'b')
-% plot(t,error_pos(:,3),'k')
-% hold off
-% legend('x error','y error','z error')
-% 
-% figure(2)
-% tiledlayout(3,1)
-% nexttile
-% plot(t,error_att(:,1),'r')
-% legend('Roll error')
-% nexttile
-% plot(t,error_att(:,2),'b')
-% legend('Pitch error')
-% nexttile
-% plot(t,error_att(:,3),'k')
-% legend('Yaw error')
-% 
-% figure(3)
-% plot(t,saved_error(1,:),'r')
-% hold on
-% plot(t,saved_error(2,:),'b')
-% plot(t,saved_error(3,:),'k')
-% hold off
-% legend('yaw * x error',' yaw * y error','yaw * z error')
+
+%% Plot
+figure(2)
+plot(t,error_pos(:,1),'r')
+hold on
+plot(t,error_pos(:,2),'b')
+plot(t,error_pos(:,3),'k')
+hold off
+legend('x error','y error','z error')
+
+figure(3)
+tiledlayout(3,1)
+nexttile
+plot(t,error_att(:,1),'r')
+legend('Roll error')
+nexttile
+plot(t,error_att(:,2),'b')
+legend('Pitch error')
+nexttile
+plot(t,error_att(:,3),'k')
+legend('Yaw error')
+
+figure(4)
+plot(t,saved_error(1,:),'r')
+hold on
+plot(t,saved_error(2,:),'b')
+plot(t,saved_error(3,:),'k')
+hold off
+legend('yaw * x error',' yaw * y error','yaw * z error')
 %% Show results
 
 % disp('**********');
