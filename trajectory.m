@@ -31,7 +31,7 @@ function [pose_d, velocity_d] = trajectory(gates)
 
 global initial_state dt;
 
-desired_speed = 2.1; % desired speed over the trajectory [in m/s]
+desired_speed = 2.7; % desired speed over the trajectory [in m/s]
 
 %% Calculate waypoints
 

@@ -60,7 +60,7 @@ for k = 1:kend
     %% UAV controller
     tic;
     
-    [command,error] = controller(pose(k,:), pose_d(k,:), velocity_d(k,:));
+    [command,error,lookup_table_p1, lookup_table_d1, lookup_table_p2, lookup_table_d2] = controller(pose(k,:), pose_d(k,:), velocity_d(k,:));
     saved_command(:,k) = command;
     saved_error(:,k) = error;
     elapsed = elapsed + toc; % for computational time
@@ -84,18 +84,22 @@ plot(t,error_pos(:,2),'b')
 plot(t,error_pos(:,3),'k')
 hold off
 legend('x error','y error','z error')
+axis([0 60 -1.5 1.5])
 
 figure(3)
 tiledlayout(3,1)
 nexttile
 plot(t,error_att(:,1),'r')
 legend('Roll error')
+axis([0 60 -2 2])
 nexttile
 plot(t,error_att(:,2),'b')
 legend('Pitch error')
+axis([0 60 -2 2])
 nexttile
 plot(t,error_att(:,3),'k')
 legend('Yaw error')
+axis([0 60 -0.5 0.5])
 
 figure(4)
 plot(t,saved_error(1,:),'r')
@@ -104,6 +108,9 @@ plot(t,saved_error(2,:),'b')
 plot(t,saved_error(3,:),'k')
 hold off
 legend('yaw * x error',' yaw * y error','yaw * z error')
+axis([0 60 -1.5 1.5])
+
+
 %% Show results
 
 % disp('**********');

@@ -25,7 +25,7 @@
 % Environment: MATLAB R2020b
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function [commands, error] = controller(pose, pose_d, velocity_d)
+function [commands, error, lookup_table_p1, lookup_table_d1, lookup_table_p2, lookup_table_d2] = controller(pose, pose_d, velocity_d)
 
 global dt initial_state;
 
@@ -37,14 +37,14 @@ end
 
 %% Initialize gains
 
-Kp_x = 20;
-Kd_x = 40;
+Kp_x = 100;%1;%100;
+Kd_x = 50;%2;%50;
 
-Kp_y = 20;
-Kd_y = 40;
+Kp_y = 100;%1;%100;
+Kd_y = 50;%2;%50;
 
-Kp_z = 20;%50;
-Kd_z = 5;
+Kp_z = 10; %50;
+Kd_z = 1; %10;
 
 %% Actual state
 
@@ -81,30 +81,20 @@ e_dy = sin(yaw)*(dx_ref - vx) + cos(yaw)*(dy_ref - vy);
 e_z = z_ref - z;
 e_dz = dz_ref - vz;
 
-[lookup_table_p, lookup_table_d] = fuzzy_control_surface();
-% [X,Y] = meshgrid(-1:.1:1);
-% for i=1:size(X,1)
-%     for j = 1:size(Y,1)
-%         [IS1_p, IS2_p]= find_defuzz_angle(X(i,j),Y(i,j));
-%         Z(i,j) = lookup_table_p(IS1_p, IS2_p);
-%         Z_d(i,j) = lookup_table_d(IS1_p, IS2_p);
-%     end
-% end
-% figure(1)
-% surf(X,Y,Z);
-% figure(2)
-% surf(X,Y,Z_d);
+[lookup_table_p1, lookup_table_d1] = fuzzy_att_control_surface();
+[lookup_table_p2, lookup_table_d2] = fuzzy_alt_control_surface();
 
 [IS1_x, IS2_x] = find_defuzz_angle(e_x, e_dx);
 [IS1_y, IS2_y] = find_defuzz_angle(e_y, e_dy);
 [IS1_z, IS2_z] = find_defuzz_angle(e_z, e_dz);
-Kp_f_x = lookup_table_p(IS1_x, IS2_x);
-Kp_f_y = lookup_table_p(IS1_y, IS2_y);
-Kp_f_z = lookup_table_p(IS1_z, IS2_z);
 
-Kd_f_x = lookup_table_d(IS1_x, IS2_x);
-Kd_f_y = lookup_table_d(IS1_y, IS2_y);
-Kd_f_z = lookup_table_d(IS1_z, IS2_z);
+Kp_f_x = lookup_table_p1(IS1_x, IS2_x);
+Kp_f_y = lookup_table_p1(IS1_y, IS2_y);
+Kp_f_z = lookup_table_p2(IS1_z, IS2_z);
+
+Kd_f_x = lookup_table_d1(IS1_x, IS2_x);
+Kd_f_y = lookup_table_d1(IS1_y, IS2_y);
+Kd_f_z = lookup_table_d2(IS1_z, IS2_z);
 
 Kp_x = Kp_x+Kp_f_x; Kp_y = Kp_y+Kp_f_y; Kp_z = Kp_z+Kp_f_z;
 Kd_x = Kd_x+Kd_f_x; Kd_y = Kd_y+Kd_f_y; Kd_z = Kd_z+Kd_f_z;
@@ -123,17 +113,3 @@ commands = [roll_ref pitch_ref yaw_ref thrust];
 error = [e_x e_y e_z e_dx e_dy e_dz];
 
 end
-
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
