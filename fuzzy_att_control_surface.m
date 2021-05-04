@@ -1,22 +1,10 @@
-function [lookup_table_p, lookup_table_d] = fuzzy_att_control_surface()
+function [lookup_table_p, lookup_table_d] = fuzzy_control_surface()
 % 제어평면 구성 함수 마지막 lookup_table이 제어평면이 된다.
-    err_memb_func = [
-    %-1 -0.9 -0.8  -0.7  -0.6  -0.5  -0.4   -0.3   -0.2   -0.1   0   0.1   0.2    0.3   0.4  0.5  0.6   0.7  0.8   0.9   1.0
-    5.0, 5.0, 5.0,  3.6,  2.5,  1.4,    0,   0,     0,    0,     0,   0,    0,     0,    0,   0,    0,    0,    0,    0,   0; % NB
-      0,   0, 0.0,  1.4,  2.5,  3.6,  5.0,  3.8,   2.5,  1.2,    0,   0,    0,     0,    0,   0,    0,    0,    0,    0,   0; % NS
-      0,   0,   0,    0,    0,    0,     0, 1.2,   2.5,  3.8,  5.0,  3.6,  2.5,  1.4,    0,   0,    0,    0,    0,    0,   0; % ZE
-      0,   0,   0,    0,    0,    0,     0,   0,    0,      0,    0, 1.4,  2.5,  3.6,  5.0,  3.6,  2.5,  1.0,   0,    0.   0; % PS
-      0,   0,   0,    0,    0,    0,     0,   0,    0,      0,    0,   0,    0,     0,   0,  1.4,  2.5,  4.0, 5.0,  5.0, 5.0;% PB   
-    ];  
-    d_err_memb_func = [  
-    %-1 -0.9 -0.8  -0.7  -0.6  -0.5  -0.4   -0.3   -0.2   -0.1   0    0.1   0.2    0.3   0.4  0.5  0.6   0.7  0.8   0.9   1.0
-    2.0, 2.0, 2.0,  1.6,  1.0,  0.5,   0,    0,      0,     0,    0,    0,    0,     0,    0,   0,   0,    0,    0,    0,  0; % NB
-      0,  0,   0,   0.6,  1.0,  1.5,  2.0,  1.75,   1.2,  1.0,  0.25,   0,    0,     0,    0,   0,   0,    0,    0,    0,  0; % NS
-      0,  0,   0,    0,    0,    0,   0.25,  0.8,   1.0,  1.5,  2.0,  1.5,   1.0, 0.25,    0,   0,   0,    0,    0,   0,   0; % ZE
-      0,  0,   0,    0,    0,    0,     0,     0,    0,     0,    0,  0.5,   1.0, 1.75,  2.0, 1.5, 1.0,  0.5,  0.0,   0,   0; % PS
-      0,  0,   0,    0,    0,    0,     0,     0,    0,     0,    0,    0,     0,    0,   0,  0.5, 1.0,  1.5,  2.0, 2.0, 2.0;% PB   
-    ];     
-
+    membership_interval = [-5:0.1:5];
+    [first_size,last_size] = size(membership_interval);
+    err_memb_func = membership_main(5,membership_interval);
+    d_err_memb_func = membership_main(5,membership_interval);
+    
     % NB=1, NS =2, ZE=3, PS=4, PB=5
     Kp_fam = [
     5 4 4 4 3;
@@ -34,20 +22,23 @@ function [lookup_table_p, lookup_table_d] = fuzzy_att_control_surface()
     ];
     
     % 각 membership Function의 중심 값 
-    pattern = [-0.8, -0.4, 0, 0.4, 0.8];
-    for I=1:21
-        for J=1:21
-            for i = 1:5
-                for j = 1:5
-                    member(i,j) = min(err_memb_func(i,I), d_err_memb_func(i,J));
+    pattern = [-4.0, -2.0, 0, 2.0, 4.0];
+%     pattern = [-1.6, -1.2, -0.8, -0.4,  0, 0.4,  0.8, 1.2, 1.6];
+%     pattern = [-0.8, -0.4, 0, 0.4, 0.8];
+    [first_ij,last_ij] = size(pattern);
+    for I=first_size:last_size
+        for J=first_size:last_size
+            for i = first_ij:last_ij
+                for j = first_ij:last_ij
+                    member(i,j) = min(err_memb_func(i,I), d_err_memb_func(j,J));
                     sum_p(i,j) = member(i,j)*pattern(Kp_fam(i,j));
                     sum_d(i,j) = member(i,j)*pattern(Kd_fam(i,j));
                 end
             end
             num_p = 0.0; den_p = 0.0;
             num_d = 0.0; den_d = 0.0;
-            for i =1:5
-                for j = 1:5
+            for i = first_ij:last_ij
+                for j = first_ij:last_ij
                     num_p = num_p+sum_p(i,j); % 분자
                     den_p = den_p+member(i,j); % 분모
                     num_d = num_d+sum_d(i,j); % 분자
@@ -67,3 +58,16 @@ function [lookup_table_p, lookup_table_d] = fuzzy_att_control_surface()
         end
     end
 end
+
+
+
+
+
+
+
+
+
+
+
+
+

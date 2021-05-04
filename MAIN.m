@@ -60,7 +60,8 @@ for k = 1:kend
     %% UAV controller
     tic;
     
-    [command,error,lookup_table_p1, lookup_table_d1, lookup_table_p2, lookup_table_d2] = controller(pose(k,:), pose_d(k,:), velocity_d(k,:));
+%     [command,error] = controller(pose(k,:), pose_d(k,:), velocity_d(k,:));
+    [command,error] = controller(pose(k,:), pose_d(k,:), velocity_d(k,:));
     saved_command(:,k) = command;
     saved_error(:,k) = error;
     elapsed = elapsed + toc; % for computational time
