@@ -1,6 +1,6 @@
 function [lookup_table_p, lookup_table_d] = fuzzy_control_surface()
 % 제어평면 구성 함수 마지막 lookup_table이 제어평면이 된다.
-    membership_interval = [-5:0.1:5];
+    membership_interval = [-1:0.1:1];
     [first_size,last_size] = size(membership_interval);
     err_memb_func = membership_main(5,membership_interval);
     d_err_memb_func = membership_main(5,membership_interval);
@@ -22,9 +22,9 @@ function [lookup_table_p, lookup_table_d] = fuzzy_control_surface()
     ];
     
     % 각 membership Function의 중심 값 
-    pattern = [-4.0, -2.0, 0, 2.0, 4.0];
+%     pattern = [-4.0, -2.0, 0, 2.0, 4.0];
 %     pattern = [-1.6, -1.2, -0.8, -0.4,  0, 0.4,  0.8, 1.2, 1.6];
-%     pattern = [-0.8, -0.4, 0, 0.4, 0.8];
+    pattern = [-0.8, -0.4, 0, 0.4, 0.8];
     [first_ij,last_ij] = size(pattern);
     for I=first_size:last_size
         for J=first_size:last_size

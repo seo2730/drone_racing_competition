@@ -42,15 +42,15 @@ end
 %% Initialize gains
 
 Kp_x = 1;%100;
-Ki_x = 0.1;
+Ki_x = 100;
 Kd_x = 2;%50;
 
 Kp_y = 1;%100;
-Ki_y = 2;
+Ki_y = 100;
 Kd_y = 2;%50;
 
 Kp_z = 10; %50;
-Ki_z = 0.1;
+Ki_z = 100;
 Kd_z = 1; %10;
 
 %% Actual state

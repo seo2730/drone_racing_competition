@@ -1,6 +1,8 @@
 function [IS1, IS2]=find_att_defuzz_angle(err, d_err)
-    scale_err = [-5:0.1:5];
-    scale_d_err = [-5:0.1:5];
+%     scale_err = [-5:0.1:5];
+%     scale_d_err = [-5:0.1:5];
+    scale_err = [-1.0:0.1:1.0];
+    scale_d_err = [-1.0:0.1:1.0];
     [first_err,last_err] = size(scale_err);
     [first_d_err,last_d_err] = size(scale_d_err);
     err_step = 0.1; d_err_step = 0.1;
